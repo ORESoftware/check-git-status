@@ -94,9 +94,10 @@ searchDir(searchRoot, function (err) {
         {
             commandName: 'Git status',
             exitCode: null,
-            stdout: '(no stdout)',
-            stderr: '(no stderr)',
-            resultValue: '(null)',
+            stdout: null,
+            stderr: null,
+            positiveResultValue: null,
+            negativeResultValue: null,
             command: firstCmds.concat(['echo "$(git status)"']),
             isNegativeResultValue: function (stdout) {
                 if (String(stdout).match(/Changes not staged for commit/i)) {
@@ -106,7 +107,7 @@ searchDir(searchRoot, function (err) {
                     return 'Untracked files';
                 }
             },
-            isPostiveResultValue: function (stdout) {
+            isPositiveResultValue: function (stdout) {
                 if (String(stdout).match(/nothing to commit, working directory clean/i)) {
                     return true;
                 }
@@ -121,19 +122,21 @@ searchDir(searchRoot, function (err) {
         {
             commandName: 'Git branch name',
             exitCode: null,
-            stdout: '(no stdout)',
-            stderr: '(no stderr)',
-            resultValue: '(null)',
+            stdout: null,
+            stderr: null,
+            positiveResultValue: null,
+            negativeResultValue: null,
             command: firstCmds.concat(['echo "$(git rev-parse --abbrev-ref HEAD)"']),
             isNegativeResultValue: function () {
+                return '';
             },
-            isPostiveResultValue: function (stdout) {
+            isPositiveResultValue: function (stdout) {
                 return true;
             },
             processPositiveResultValue: function (stdout) {
                 return String(stdout).trim();
             },
-            processNegativeResultValue: function (stdout) {
+            processNegativeResultValue: function (stdout, stderr) {
                 return String(stdout).trim();
             }
         }
@@ -160,8 +163,16 @@ searchDir(searchRoot, function (err) {
             k.once('exit', function (code) {
                 c.exitCode = code;
                 c.stderr = stderr;
-                if (false) {
-                    c.stdout = stdout;
+                c.stdout = stdout;
+                c.negativeResultValue = c.isNegativeResultValue(c.stdout);
+                if (!c.negativeResultValue) {
+                    if (c.isPositiveResultValue()) {
+                        c.positiveResultValue = c.processPositiveResultValue(c.stdout);
+                    }
+                    else {
+                        c.negativeResultValue =
+                            'a positive result could not be acquired, but no clear negative result was found.';
+                    }
                 }
                 v.push(JSON.parse(JSON.stringify(c)));
                 cb(null);
@@ -174,7 +185,14 @@ searchDir(searchRoot, function (err) {
         Object.keys(results).forEach(function (k) {
             logging_1.log.info('results for key: ', k);
             results[k].forEach(function (v) {
-                console.log(v);
+                console.log();
+                console.log('Command name:', v.commandName);
+                if (v.positiveResultValue) {
+                    console.log('Positive result:', v.positiveResultValue);
+                }
+                else {
+                    console.log('Negative result value:', v.negativeResultValue || 'unknown negative result.');
+                }
             });
         });
         process.exit(0);
