@@ -5,7 +5,7 @@ var util = require("util");
 var path = require("path");
 var fs = require("fs");
 var cp = require("child_process");
-var chalk = require("chalk");
+var chalk_1 = require("chalk");
 var dashdash = require('dashdash');
 var async = require('async');
 var cwd = process.cwd();
@@ -93,10 +93,14 @@ var searchDir = function (dir, cb) {
         }, cb);
     });
 };
+console.log();
+logging_1.log.info(chalk_1.default.green.bold('Searching for all git repos within this path:'), chalk_1.default.black(searchRoot));
 searchDir(searchRoot, function (err) {
     if (err) {
         throw err;
     }
+    logging_1.log.info(chalk_1.default.green.bold('Searching has completed.'));
+    console.log();
     if (repos.length < 1) {
         logging_1.log.warning('no git repos could be found.');
         return process.exit(0);
@@ -107,14 +111,13 @@ searchDir(searchRoot, function (err) {
     console.log();
     logging_1.log.info('Git repos were found at these paths:');
     repos.forEach(function (r) {
-        logging_1.log.info(chalk.magenta(r));
+        logging_1.log.info(chalk_1.default.magenta(r));
     });
     console.log();
     var results = {};
     var firstCmds = ['set -e; cd "${git_root_path}"'];
     var getCommands = function () {
-        return [
-            {
+        return [{
                 commandName: '"Git status"',
                 exitCode: null,
                 stdout: null,
@@ -174,8 +177,7 @@ searchDir(searchRoot, function (err) {
                 processNegativeResultValue: function (stdout, stderr) {
                     return String(stdout).trim();
                 }
-            }
-        ];
+            }];
     };
     async.eachLimit(repos, 1, function (r, cb) {
         var v = results[r] = [];
@@ -231,12 +233,12 @@ searchDir(searchRoot, function (err) {
                 logging_1.log.info('results for key: ', k);
                 results[k].forEach(function (v) {
                     console.log();
-                    logging_1.log.info('Command name:', chalk.magenta(v.commandName));
+                    logging_1.log.info('Command name:', chalk_1.default.magenta(v.commandName));
                     if (v.positiveResultValue) {
-                        logging_1.log.info(chalk.cyan('Positive result:'), v.positiveResultValue);
+                        logging_1.log.info(chalk_1.default.cyan('Positive result:'), v.positiveResultValue);
                     }
                     else {
-                        logging_1.log.info(chalk.yellow('Negative result value:'), v.negativeResultValue || 'unknown negative result.');
+                        logging_1.log.info(chalk_1.default.yellow('Negative result value:'), v.negativeResultValue || 'unknown negative result.');
                         if (String(v.stderr).trim()) {
                             logging_1.log.warning('stderr:', v.stderr);
                         }

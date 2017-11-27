@@ -153,11 +153,18 @@ const searchDir = function (dir: string, cb: Function) {
   
 };
 
+console.log();
+log.info(chalk.green.bold('Searching for all git repos within this path:'), chalk.black(searchRoot));
+
 searchDir(searchRoot, function (err: Error) {
   
   if (err) {
     throw err;
   }
+  
+  log.info(chalk.green.bold('Searching has completed.'));
+  console.log();
+  
   
   if (repos.length < 1) {
     log.warning('no git repos could be found.');

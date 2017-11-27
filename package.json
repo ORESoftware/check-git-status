@@ -7,7 +7,8 @@
     "test": "suman"
   },
   "bin": {
-    "check-git-status": "index.js"
+    "check-git-status": "index.js",
+    "chkgits": "index.js"
   },
   "repository": {
     "type": "git",
