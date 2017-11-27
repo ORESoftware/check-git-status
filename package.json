@@ -1,0 +1,30 @@
+{
+  "name": "check-git-status",
+  "version": "0.0.101",
+  "description": "Checks the Git status of all Git repos on your filesystem within a directory.",
+  "main": "index.js",
+  "scripts": {
+    "test": "suman"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ORESoftware/check-git-status.git"
+  },
+  "keywords": [
+    "git",
+    "status",
+    "automated",
+    "tool",
+    "dev-tools"
+  ],
+  "author": "Olegzandr VD",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ORESoftware/check-git-status/issues"
+  },
+  "homepage": "https://github.com/ORESoftware/check-git-status#readme",
+  "devDependencies": {
+    "@types/core-js": "^0.9.43",
+    "@types/node": "^8.0.53"
+  }
+}
