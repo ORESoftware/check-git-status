@@ -27,6 +27,13 @@ process.once('exit', function (code) {
   log.info('NPM-Link-Up is exiting with code => ', code, '\n');
 });
 
+const ignorables = {
+
+  'node_modules': true,
+  '.idea': true,
+
+};
+
 //////////////////////////////////////////////////////////////
 
 export interface INPMLinkUpOpts {
@@ -96,16 +103,32 @@ const repos: Array<string> = [];
 
 const searchDir = function (dir: string, cb: Function) {
 
-  fs.readdir(dir, function (err, items) {
+  console.log('searching dir', dir);
 
-    async.eachLimit(items, 5, function (item: string, cb: Function) {
+  fs.readdir(dir, function (err, itemz) {
+
+    const items = itemz.filter(function (v) {
+      if (ignorables[v]) {
+        log.warning('ignored path: ', path.resolve(dir + '/' + v));
+        return false;
+      }
+      return true;
+    });
+
+    async.eachLimit(items, 3, function (item: string, cb: Function) {
 
       const full = path.resolve(dir, item);
+
+      // if(ignorables[item]){
+      //   log.warning('ignored path: ', full);
+      //   return process.nextTick(cb);
+      // }
 
       fs.stat(full, function (err, stats) {
 
         if (err) {
-          return cb(err);
+          log.warning(err.message);
+          return cb(null);
         }
 
         if (!stats.isDirectory()) {
@@ -157,18 +180,22 @@ searchDir(searchRoot, function (err: Error) {
       positiveResultValue: null,
       negativeResultValue: null,
       command: firstCmds.concat(['echo "$(git status)"']),
-      isNegativeResultValue: function (stdout: string): string {
+      isNegativeResultValue: function (stdout: string, stderr: string): boolean {
 
         if (String(stdout).match(/Changes not staged for commit/i)) {
-          return 'Changes not staged for commit';
+          return true;
+        }
+
+        if(String(stdout).match(/Changes to be committed/i)){
+          return true;
         }
 
         if (String(stdout).match(/Untracked files/i)) {
-          return 'Untracked files';
+          return true;
         }
       },
 
-      isPositiveResultValue: function (stdout: string): boolean {
+      isPositiveResultValue: function (stdout: string, stderr: string): boolean {
 
         if (String(stdout).match(/nothing to commit, working directory clean/i)) {
           return true;
@@ -176,12 +203,20 @@ searchDir(searchRoot, function (err: Error) {
 
       },
 
-      processPositiveResultValue: function (stdout: string): string {
+      processPositiveResultValue: function (stdout: string, stderr: string): string {
         return String(stdout).trim();
       },
 
       processNegativeResultValue: function (stdout: string, stderr: string): string {
-        return String(stdout).trim();
+        if (String(stdout).match(/Changes not staged for commit/i)) {
+          return 'Changes not staged for commit';
+        }
+
+        if (String(stdout).match(/Untracked files/i)) {
+          return 'Untracked files';
+        }
+
+        return 'unknown negative result';
       }
     },
 
@@ -193,13 +228,13 @@ searchDir(searchRoot, function (err: Error) {
       positiveResultValue: null,
       negativeResultValue: null,
       command: firstCmds.concat(['echo "$(git rev-parse --abbrev-ref HEAD)"']),
-      isNegativeResultValue: function () {
-        return '';
+      isNegativeResultValue: function (stdout: string, stderr: string): boolean {
+        return false;
       },
-      isPositiveResultValue: function (stdout: string): boolean {
+      isPositiveResultValue: function (stdout: string, stderr: string): boolean {
         return true;
       },
-      processPositiveResultValue: function (stdout: string): string {
+      processPositiveResultValue: function (stdout: string, stderr: string): string {
         return String(stdout).trim();
       },
       processNegativeResultValue: function (stdout: string, stderr: string): string {
@@ -238,14 +273,16 @@ searchDir(searchRoot, function (err: Error) {
         k.once('exit', function (code) {
 
           c.exitCode = code;
-          c.stderr = stderr;
-          c.stdout = stdout;
+          c.stderr = String(stderr).trim();
+          c.stdout = String(stdout).trim();
 
-          c.negativeResultValue = c.isNegativeResultValue(c.stdout);
+          if (c.isNegativeResultValue(stdout, stderr)) {
+            c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) || 'unknown negative result';
+          }
 
-          if (!c.negativeResultValue) {
-            if (c.isPositiveResultValue()) {
-              c.positiveResultValue = c.processPositiveResultValue(c.stdout);
+          else {
+            if (c.isPositiveResultValue(stdout, stderr)) {
+              c.positiveResultValue = c.processPositiveResultValue(stdout, stderr);
             }
             else {
               c.negativeResultValue =
@@ -271,18 +308,21 @@ searchDir(searchRoot, function (err: Error) {
 
       Object.keys(results).forEach(function (k) {
 
+        console.log(' ---------------------------------------------------- ');
+        console.log();
+
         log.info('results for key: ', k);
         results[k].forEach(function (v) {
 
             console.log();
-            console.log('Command name:', v.commandName);
+            log.info('Command name:', chalk.magenta(v.commandName));
 
             if (v.positiveResultValue) {
-              console.log('Positive result:',
+              log.info(chalk.cyan('Positive result:'),
                 v.positiveResultValue);
             }
             else {
-              console.log('Negative result value:',
+              log.info(chalk.yellow('Negative result value:'),
                 v.negativeResultValue || 'unknown negative result.');
             }
 
