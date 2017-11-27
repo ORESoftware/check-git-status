@@ -111,7 +111,7 @@ searchDir(searchRoot, function (err) {
     });
     console.log();
     var results = {};
-    var firstCmds = ['set -e; cd $search_root'];
+    var firstCmds = ['set -e; cd "${git_root_path}"'];
     var getCommands = function () {
         return [
             {
@@ -183,7 +183,7 @@ searchDir(searchRoot, function (err) {
         async.eachLimit(commands, 1, function (c, cb) {
             var k = cp.spawn('bash', [], {
                 env: Object.assign({}, process.env, {
-                    search_root: searchRoot
+                    git_root_path: r
                 })
             });
             process.nextTick(function () {
@@ -202,11 +202,11 @@ searchDir(searchRoot, function (err) {
                 c.stderr = String(stderr).trim();
                 c.stdout = String(stdout).trim();
                 if (c.isNegativeResultValue(stdout, stderr)) {
-                    c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) || 'unknown negative result';
+                    c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) || 'unknown negative result.';
                 }
                 else {
                     if (c.isPositiveResultValue(stdout, stderr)) {
-                        c.positiveResultValue = c.processPositiveResultValue(stdout, stderr);
+                        c.positiveResultValue = c.processPositiveResultValue(stdout, stderr) || 'unknown positive result.';
                     }
                     else {
                         c.negativeResultValue =
@@ -222,20 +222,27 @@ searchDir(searchRoot, function (err) {
             throw new Error(util.inspect(err));
         }
         Object.keys(results).forEach(function (k) {
-            console.log(' ---------------------------------------------------- ');
-            console.log();
-            logging_1.log.info('results for key: ', k);
-            results[k].forEach(function (v) {
-                console.log();
-                logging_1.log.info('Command name:', chalk.magenta(v.commandName));
-                if (v.positiveResultValue) {
-                    logging_1.log.info(chalk.cyan('Positive result:'), v.positiveResultValue);
-                }
-                else {
-                    logging_1.log.info(chalk.yellow('Negative result value:'), v.negativeResultValue || 'unknown negative result.');
-                    logging_1.log.warning('stderr:', v.stderr);
-                }
+            var hasProblem = results[k].some(function (v) {
+                return v.negativeResultValue || !v.positiveResultValue;
             });
+            if (hasProblem) {
+                console.log(' ---------------------------------------------------- ');
+                console.log();
+                logging_1.log.info('results for key: ', k);
+                results[k].forEach(function (v) {
+                    console.log();
+                    logging_1.log.info('Command name:', chalk.magenta(v.commandName));
+                    if (v.positiveResultValue) {
+                        logging_1.log.info(chalk.cyan('Positive result:'), v.positiveResultValue);
+                    }
+                    else {
+                        logging_1.log.info(chalk.yellow('Negative result value:'), v.negativeResultValue || 'unknown negative result.');
+                        if (String(v.stderr).trim()) {
+                            logging_1.log.warning('stderr:', v.stderr);
+                        }
+                    }
+                });
+            }
         });
         process.exit(0);
     });

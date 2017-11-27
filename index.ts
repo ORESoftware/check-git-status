@@ -108,7 +108,7 @@ const searchDir = function (dir: string, cb: Function) {
 
     const items = itemz.filter(function (v) {
       if (ignorables[v]) {
-        if(false){
+        if (false) {
           log.warning('ignored path: ', path.resolve(dir + '/' + v));
         }
         ignoredPathCount++;
@@ -164,7 +164,7 @@ searchDir(searchRoot, function (err: Error) {
     return process.exit(0);
   }
 
-  if(ignoredPathCount){
+  if (ignoredPathCount) {
     log.info('This many paths were ignored:', ignoredPathCount);
   }
 
@@ -177,7 +177,7 @@ searchDir(searchRoot, function (err: Error) {
 
   const results = {};
 
-  const firstCmds = ['set -e; cd $search_root'];
+  const firstCmds = ['set -e; cd "${git_root_path}"'];
 
   const getCommands = function () {
 
@@ -268,7 +268,7 @@ searchDir(searchRoot, function (err: Error) {
 
         const k = cp.spawn('bash', [], {
           env: Object.assign({}, process.env, {
-            search_root: searchRoot
+            git_root_path: r
           })
         });
 
@@ -294,12 +294,12 @@ searchDir(searchRoot, function (err: Error) {
           c.stdout = String(stdout).trim();
 
           if (c.isNegativeResultValue(stdout, stderr)) {
-            c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) || 'unknown negative result';
+            c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) || 'unknown negative result.';
           }
 
           else {
             if (c.isPositiveResultValue(stdout, stderr)) {
-              c.positiveResultValue = c.processPositiveResultValue(stdout, stderr);
+              c.positiveResultValue = c.processPositiveResultValue(stdout, stderr) || 'unknown positive result.';
             }
             else {
               c.negativeResultValue =
@@ -325,11 +325,17 @@ searchDir(searchRoot, function (err: Error) {
 
       Object.keys(results).forEach(function (k) {
 
-        console.log(' ---------------------------------------------------- ');
-        console.log();
+        const hasProblem = results[k].some(function (v) {
+          return v.negativeResultValue || !v.positiveResultValue;
+        });
 
-        log.info('results for key: ', k);
-        results[k].forEach(function (v) {
+        if (hasProblem) {
+
+          console.log(' ---------------------------------------------------- ');
+          console.log();
+
+          log.info('results for key: ', k);
+          results[k].forEach(function (v) {
 
             console.log();
             log.info('Command name:', chalk.magenta(v.commandName));
@@ -342,11 +348,16 @@ searchDir(searchRoot, function (err: Error) {
               log.info(chalk.yellow('Negative result value:'),
                 v.negativeResultValue || 'unknown negative result.');
 
-              log.warning('stderr:', v.stderr);
+              if (String(v.stderr).trim()) {
+                log.warning('stderr:', v.stderr);
+              }
+
             }
 
-          }
-        )
+          });
+
+        }
+
       });
 
       process.exit(0);
