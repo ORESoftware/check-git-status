@@ -1,0 +1,1 @@
+Currently only investigates the Git status of checked out branches.

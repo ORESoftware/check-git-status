@@ -30,11 +30,11 @@
   "homepage": "https://github.com/ORESoftware/check-git-status#readme",
   "devDependencies": {
     "@types/core-js": "^0.9.43",
-    "@types/node": "^8.0.53"
+    "@types/node": "^8.0.53",
+    "@types/async": "^2.0.45",
+    "@types/chalk": "^2.2.0"
   },
   "dependencies": {
-    "@types/async": "^2.0.45",
-    "@types/chalk": "^2.2.0",
     "async": "^2.6.0",
     "chalk": "^2.3.0",
     "dashdash": "^1.14.1"
