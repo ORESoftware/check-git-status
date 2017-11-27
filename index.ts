@@ -99,17 +99,19 @@ catch (err) {
   throw err;
 }
 
+const ignoredPathCount = 0;
 const repos: Array<string> = [];
 
 const searchDir = function (dir: string, cb: Function) {
-
-  console.log('searching dir', dir);
 
   fs.readdir(dir, function (err, itemz) {
 
     const items = itemz.filter(function (v) {
       if (ignorables[v]) {
-        log.warning('ignored path: ', path.resolve(dir + '/' + v));
+        if(false){
+          log.warning('ignored path: ', path.resolve(dir + '/' + v));
+        }
+        ignoredPathCount++;
         return false;
       }
       return true;
@@ -162,90 +164,105 @@ searchDir(searchRoot, function (err: Error) {
     return process.exit(0);
   }
 
-  console.log('Git repos were found at these paths:');
+  if(ignoredPathCount){
+    log.info('This many paths were ignored:', ignoredPathCount);
+  }
+
+  console.log();
+  log.info('Git repos were found at these paths:');
   repos.forEach(function (r) {
-    log.info(r);
+    log.info(chalk.magenta(r));
   });
+  console.log();
 
   const results = {};
 
   const firstCmds = ['set -e; cd $search_root'];
 
-  const commands = [
-    {
-      commandName: 'Git status',
-      exitCode: null,
-      stdout: null,
-      stderr: null,
-      positiveResultValue: null,
-      negativeResultValue: null,
-      command: firstCmds.concat(['echo "$(git status)"']),
-      isNegativeResultValue: function (stdout: string, stderr: string): boolean {
+  const getCommands = function () {
 
-        if (String(stdout).match(/Changes not staged for commit/i)) {
-          return true;
-        }
+    return [
+      {
+        commandName: '"Git status"',
+        exitCode: null,
+        stdout: null,
+        stderr: null,
+        positiveResultValue: null,
+        negativeResultValue: null,
+        command: firstCmds.concat(['echo "$(git status)"']),
+        isNegativeResultValue: function (stdout: string, stderr: string): boolean {
 
-        if(String(stdout).match(/Changes to be committed/i)){
-          return true;
-        }
+          if (String(stdout).match(/Changes not staged for commit/i)) {
+            return true;
+          }
 
-        if (String(stdout).match(/Untracked files/i)) {
-          return true;
+          if (String(stdout).match(/Changes to be committed/i)) {
+            return true;
+          }
+
+          if (String(stdout).match(/Untracked files/i)) {
+            return true;
+          }
+        },
+
+        isPositiveResultValue: function (stdout: string, stderr: string): boolean {
+
+          if (String(stdout).match(/nothing to commit, working directory clean/i)) {
+            return true;
+          }
+
+        },
+
+        processPositiveResultValue: function (stdout: string, stderr: string): string {
+
+          if (String(stdout).match(/nothing to commit, working directory clean/)) {
+            return 'nothing to commit, working directory clean';
+          }
+
+          return String(stdout).trim();
+        },
+
+        processNegativeResultValue: function (stdout: string, stderr: string): string {
+          if (String(stdout).match(/Changes not staged for commit/i)) {
+            return 'Changes not staged for commit';
+          }
+
+          if (String(stdout).match(/Untracked files/i)) {
+            return 'Untracked files';
+          }
+
+          return 'unknown negative result';
         }
       },
 
-      isPositiveResultValue: function (stdout: string, stderr: string): boolean {
-
-        if (String(stdout).match(/nothing to commit, working directory clean/i)) {
+      {
+        commandName: '"Git branch name"',
+        exitCode: null,
+        stdout: null,
+        stderr: null,
+        positiveResultValue: null,
+        negativeResultValue: null,
+        command: firstCmds.concat(['echo "$(git rev-parse --abbrev-ref HEAD)"']),
+        isNegativeResultValue: function (stdout: string, stderr: string): boolean {
+          return false;
+        },
+        isPositiveResultValue: function (stdout: string, stderr: string): boolean {
           return true;
+        },
+        processPositiveResultValue: function (stdout: string, stderr: string): string {
+          return String(stdout).trim();
+        },
+        processNegativeResultValue: function (stdout: string, stderr: string): string {
+          return String(stdout).trim();
         }
-
-      },
-
-      processPositiveResultValue: function (stdout: string, stderr: string): string {
-        return String(stdout).trim();
-      },
-
-      processNegativeResultValue: function (stdout: string, stderr: string): string {
-        if (String(stdout).match(/Changes not staged for commit/i)) {
-          return 'Changes not staged for commit';
-        }
-
-        if (String(stdout).match(/Untracked files/i)) {
-          return 'Untracked files';
-        }
-
-        return 'unknown negative result';
       }
-    },
+    ];
+  };
 
-    {
-      commandName: 'Git branch name',
-      exitCode: null,
-      stdout: null,
-      stderr: null,
-      positiveResultValue: null,
-      negativeResultValue: null,
-      command: firstCmds.concat(['echo "$(git rev-parse --abbrev-ref HEAD)"']),
-      isNegativeResultValue: function (stdout: string, stderr: string): boolean {
-        return false;
-      },
-      isPositiveResultValue: function (stdout: string, stderr: string): boolean {
-        return true;
-      },
-      processPositiveResultValue: function (stdout: string, stderr: string): string {
-        return String(stdout).trim();
-      },
-      processNegativeResultValue: function (stdout: string, stderr: string): string {
-        return String(stdout).trim();
-      }
-    }
-  ];
-
-  async.eachLimit(repos, 3, function (r: string, cb: Function) {
+  async.eachLimit(repos, 1, function (r: string, cb: Function) {
 
       const v = results[r] = [];
+      const commands = getCommands();
 
       async.eachLimit(commands, 1, function (c: Object, cb: Function) {
 
@@ -324,6 +341,8 @@ searchDir(searchRoot, function (err: Error) {
             else {
               log.info(chalk.yellow('Negative result value:'),
                 v.negativeResultValue || 'unknown negative result.');
+
+              log.warning('stderr:', v.stderr);
             }
 
           }
