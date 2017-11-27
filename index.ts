@@ -11,7 +11,7 @@ import * as stream from 'stream';
 import * as cp from 'child_process';
 
 //npm
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 const dashdash = require('dashdash');
 const async = require('async');
 const cwd = process.cwd();
@@ -22,16 +22,16 @@ import {options} from './lib/options';
 
 //////////////////////////////////////////////////////////////////////////
 
-process.once('exit', function (code) {
+process.once('exit', function (code: number) {
   console.log('\n');
   log.info('NPM-Link-Up is exiting with code => ', code, '\n');
 });
 
 const ignorables = {
-
+  
   'node_modules': true,
   '.idea': true,
-
+  
 };
 
 //////////////////////////////////////////////////////////////
@@ -74,13 +74,13 @@ if (opts.help) {
 }
 
 if (opts.completion) {
-
+  
   let generatedBashCode = dashdash.bashCompletionFromOptions({
     name: 'check-git-status',
     options: options,
     includeHidden: true
   });
-
+  
   console.log(generatedBashCode);
   process.exit(0);
 }
@@ -103,9 +103,9 @@ const ignoredPathCount = 0;
 const repos: Array<string> = [];
 
 const searchDir = function (dir: string, cb: Function) {
-
+  
   fs.readdir(dir, function (err, itemz) {
-
+    
     const items = itemz.filter(function (v) {
       if (ignorables[v]) {
         if (false) {
@@ -116,27 +116,27 @@ const searchDir = function (dir: string, cb: Function) {
       }
       return true;
     });
-
+    
     async.eachLimit(items, 3, function (item: string, cb: Function) {
-
+      
       const full = path.resolve(dir, item);
-
+      
       // if(ignorables[item]){
       //   log.warning('ignored path: ', full);
       //   return process.nextTick(cb);
       // }
-
+      
       fs.stat(full, function (err, stats) {
-
+        
         if (err) {
           log.warning(err.message);
           return cb(null);
         }
-
+        
         if (!stats.isDirectory()) {
           return cb(null);
         }
-
+        
         if (path.basename(full) === '.git') {
           repos.push(path.dirname(full));
           cb(null);
@@ -144,97 +144,94 @@ const searchDir = function (dir: string, cb: Function) {
         else {
           searchDir(full, cb);
         }
-
+        
       });
-
+      
     }, cb);
-
+    
   });
-
+  
 };
 
 searchDir(searchRoot, function (err: Error) {
-
+  
   if (err) {
     throw err;
   }
-
+  
   if (repos.length < 1) {
     log.warning('no git repos could be found.');
     return process.exit(0);
   }
-
+  
   if (ignoredPathCount) {
     log.info('This many paths were ignored:', ignoredPathCount);
   }
-
+  
   console.log();
   log.info('Git repos were found at these paths:');
   repos.forEach(function (r) {
     log.info(chalk.magenta(r));
   });
   console.log();
-
+  
   const results = {};
-
+  
   const firstCmds = ['set -e; cd "${git_root_path}"'];
-
+  
   const getCommands = function () {
-
-    return [
-      {
-        commandName: '"Git status"',
-        exitCode: null,
-        stdout: null,
-        stderr: null,
-        positiveResultValue: null,
-        negativeResultValue: null,
-        command: firstCmds.concat(['echo "$(git status)"']),
-        isNegativeResultValue: function (stdout: string, stderr: string): boolean {
-
-          if (String(stdout).match(/Changes not staged for commit/i)) {
-            return true;
-          }
-
-          if (String(stdout).match(/Changes to be committed/i)) {
-            return true;
-          }
-
-          if (String(stdout).match(/Untracked files/i)) {
-            return true;
-          }
-        },
-
-        isPositiveResultValue: function (stdout: string, stderr: string): boolean {
-
-          if (String(stdout).match(/nothing to commit, working directory clean/i)) {
-            return true;
-          }
-
-        },
-
-        processPositiveResultValue: function (stdout: string, stderr: string): string {
-
-          if (String(stdout).match(/nothing to commit, working directory clean/)) {
-            return 'nothing to commit, working directory clean';
-          }
-
-          return String(stdout).trim();
-        },
-
-        processNegativeResultValue: function (stdout: string, stderr: string): string {
-          if (String(stdout).match(/Changes not staged for commit/i)) {
-            return 'Changes not staged for commit';
-          }
-
-          if (String(stdout).match(/Untracked files/i)) {
-            return 'Untracked files';
-          }
-
-          return 'unknown negative result';
+    
+    return [{
+      commandName: '"Git status"',
+      exitCode: null,
+      stdout: null,
+      stderr: null,
+      positiveResultValue: null,
+      negativeResultValue: null,
+      command: firstCmds.concat(['echo "$(git status)"']),
+      isNegativeResultValue: function (stdout: string, stderr: string): boolean {
+        
+        if (String(stdout).match(/Changes not staged for commit/i)) {
+          return true;
+        }
+        
+        if (String(stdout).match(/Changes to be committed/i)) {
+          return true;
+        }
+        
+        if (String(stdout).match(/Untracked files/i)) {
+          return true;
         }
       },
-
+      
+      isPositiveResultValue: function (stdout: string, stderr: string): boolean {
+        if (String(stdout).match(/nothing to commit, working directory clean/i)) {
+          return true;
+        }
+      },
+      
+      processPositiveResultValue: function (stdout: string, stderr: string): string {
+        
+        if (String(stdout).match(/nothing to commit, working directory clean/)) {
+          return 'nothing to commit, working directory clean';
+        }
+        
+        return String(stdout).trim();
+      },
+      
+      processNegativeResultValue: function (stdout: string, stderr: string): string {
+        if (String(stdout).match(/Changes not staged for commit/i)) {
+          return 'Changes not staged for commit';
+        }
+        
+        if (String(stdout).match(/Untracked files/i)) {
+          return 'Untracked files';
+        }
+        
+        return 'unknown negative result';
+      }
+    },
+      
       {
         commandName: '"Git branch name"',
         exitCode: null,
@@ -255,48 +252,48 @@ searchDir(searchRoot, function (err: Error) {
         processNegativeResultValue: function (stdout: string, stderr: string): string {
           return String(stdout).trim();
         }
-      }
-    ];
+        
+      }];
   };
-
+  
   async.eachLimit(repos, 1, function (r: string, cb: Function) {
-
+      
       const v = results[r] = [];
       const commands = getCommands();
-
+      
       async.eachLimit(commands, 1, function (c: Object, cb: Function) {
-
+        
         const k = cp.spawn('bash', [], {
           env: Object.assign({}, process.env, {
             git_root_path: r
           })
         });
-
+        
         process.nextTick(function () {
           k.stdin.end(c.command.join(';') + '\n');
         });
-
+        
         let stdout = '';
         let stderr = '';
-
+        
         k.stderr.on('data', function (d) {
           stderr += String(d);
         });
-
+        
         k.stdout.on('data', function (d) {
           stdout += String(d);
         });
-
+        
         k.once('exit', function (code) {
-
+          
           c.exitCode = code;
           c.stderr = String(stderr).trim();
           c.stdout = String(stdout).trim();
-
+          
           if (c.isNegativeResultValue(stdout, stderr)) {
             c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) || 'unknown negative result.';
           }
-
+          
           else {
             if (c.isPositiveResultValue(stdout, stderr)) {
               c.positiveResultValue = c.processPositiveResultValue(stdout, stderr) || 'unknown positive result.';
@@ -306,40 +303,40 @@ searchDir(searchRoot, function (err: Error) {
                 'a positive result could not be acquired, but no clear negative result was found.'
             }
           }
-
+          
           v.push(JSON.parse(JSON.stringify(c)));
-
+          
           cb(null);
-
+          
         });
-
+        
       }, cb);
-
+      
     },
-
+    
     function (err: Error) {
-
+      
       if (err) {
         throw new Error(util.inspect(err));
       }
-
+      
       Object.keys(results).forEach(function (k) {
-
+        
         const hasProblem = results[k].some(function (v) {
           return v.negativeResultValue || !v.positiveResultValue;
         });
-
+        
         if (hasProblem) {
-
+          
           console.log(' ---------------------------------------------------- ');
           console.log();
-
+          
           log.info('results for key: ', k);
           results[k].forEach(function (v) {
-
+            
             console.log();
             log.info('Command name:', chalk.magenta(v.commandName));
-
+            
             if (v.positiveResultValue) {
               log.info(chalk.cyan('Positive result:'),
                 v.positiveResultValue);
@@ -347,22 +344,22 @@ searchDir(searchRoot, function (err: Error) {
             else {
               log.info(chalk.yellow('Negative result value:'),
                 v.negativeResultValue || 'unknown negative result.');
-
+              
               if (String(v.stderr).trim()) {
                 log.warning('stderr:', v.stderr);
               }
-
+              
             }
-
+            
           });
-
+          
         }
-
+        
       });
-
+      
       process.exit(0);
-
+      
     });
-
+  
 });
 
