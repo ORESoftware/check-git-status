@@ -56,11 +56,14 @@ try {
     fs.statSync(searchRoot);
 }
 catch (err) {
+    logging_1.log.error('Stats could not be collected on supposed search root:', searchRoot);
     throw err;
 }
 var ignoredPathCount = 0;
+var searchedPathCount = 0;
 var repos = [];
 var searchDir = function (dir, cb) {
+    searchedPathCount++;
     fs.readdir(dir, function (err, itemz) {
         var items = itemz.filter(function (v) {
             if (ignorables[v]) {
@@ -94,24 +97,25 @@ var searchDir = function (dir, cb) {
     });
 };
 console.log();
-logging_1.log.info(chalk_1.default.green.bold('Searching for all git repos within this path:'), chalk_1.default.black(searchRoot));
+logging_1.log.info(chalk_1.default.green.bold('Searching for all git repos within this path:'), chalk_1.default.black.bold(searchRoot));
 searchDir(searchRoot, function (err) {
     if (err) {
         throw err;
     }
+    logging_1.log.info('This many paths were ignored:', chalk_1.default.green.bold(String(ignoredPathCount)));
+    logging_1.log.info('This many directories were searched:', chalk_1.default.green.bold(String(searchedPathCount)));
     logging_1.log.info(chalk_1.default.green.bold('Searching has completed.'));
     console.log();
     if (repos.length < 1) {
         logging_1.log.warning('no git repos could be found.');
         return process.exit(0);
     }
-    if (ignoredPathCount) {
-        logging_1.log.info('This many paths were ignored:', ignoredPathCount);
-    }
+    console.log();
+    console.log('Number of git repos found: ', chalk_1.default.green.bold(String(repos.length)));
     console.log();
     logging_1.log.info('Git repos were found at these paths:');
-    repos.forEach(function (r) {
-        logging_1.log.info(chalk_1.default.magenta(r));
+    repos.forEach(function (r, i) {
+        logging_1.log.info(String("[" + (i + 1) + "]"), chalk_1.default.magenta(r));
     });
     console.log();
     var results = {};
@@ -169,7 +173,7 @@ searchDir(searchRoot, function (err) {
                     return false;
                 },
                 isPositiveResultValue: function (stdout, stderr) {
-                    return true;
+                    return String(stdout).trim() === 'master';
                 },
                 processPositiveResultValue: function (stdout, stderr) {
                     return String(stdout).trim();
@@ -211,7 +215,7 @@ searchDir(searchRoot, function (err) {
                         c.positiveResultValue = c.processPositiveResultValue(stdout, stderr) || 'unknown positive result.';
                     }
                     else {
-                        c.negativeResultValue =
+                        c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) ||
                             'a positive result could not be acquired, but no clear negative result was found.';
                     }
                 }

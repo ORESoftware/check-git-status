@@ -96,13 +96,17 @@ try {
   fs.statSync(searchRoot);
 }
 catch (err) {
+  log.error('Stats could not be collected on supposed search root:', searchRoot);
   throw err;
 }
 
-const ignoredPathCount = 0;
+let ignoredPathCount = 0;
+let searchedPathCount = 0;
 const repos: Array<string> = [];
 
 const searchDir = function (dir: string, cb: Function) {
+  
+  searchedPathCount++;
   
   fs.readdir(dir, function (err, itemz) {
     
@@ -154,7 +158,7 @@ const searchDir = function (dir: string, cb: Function) {
 };
 
 console.log();
-log.info(chalk.green.bold('Searching for all git repos within this path:'), chalk.black(searchRoot));
+log.info(chalk.green.bold('Searching for all git repos within this path:'), chalk.black.bold(searchRoot));
 
 searchDir(searchRoot, function (err: Error) {
   
@@ -162,23 +166,23 @@ searchDir(searchRoot, function (err: Error) {
     throw err;
   }
   
+  log.info('This many paths were ignored:', chalk.green.bold(String(ignoredPathCount)));
+  log.info('This many directories were searched:', chalk.green.bold(String(searchedPathCount)));
+  
   log.info(chalk.green.bold('Searching has completed.'));
   console.log();
-  
   
   if (repos.length < 1) {
     log.warning('no git repos could be found.');
     return process.exit(0);
   }
   
-  if (ignoredPathCount) {
-    log.info('This many paths were ignored:', ignoredPathCount);
-  }
-  
+  console.log();
+  console.log('Number of git repos found: ', chalk.green.bold(String(repos.length)));
   console.log();
   log.info('Git repos were found at these paths:');
-  repos.forEach(function (r) {
-    log.info(chalk.magenta(r));
+  repos.forEach(function (r, i) {
+    log.info(String(`[${i + 1}]`),chalk.magenta(r));
   });
   console.log();
   
@@ -251,7 +255,7 @@ searchDir(searchRoot, function (err: Error) {
           return false;
         },
         isPositiveResultValue: function (stdout: string, stderr: string): boolean {
-          return true;
+          return String(stdout).trim() === 'master';
         },
         processPositiveResultValue: function (stdout: string, stderr: string): string {
           return String(stdout).trim();
@@ -306,7 +310,7 @@ searchDir(searchRoot, function (err: Error) {
               c.positiveResultValue = c.processPositiveResultValue(stdout, stderr) || 'unknown positive result.';
             }
             else {
-              c.negativeResultValue =
+              c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) ||
                 'a positive result could not be acquired, but no clear negative result was found.'
             }
           }
