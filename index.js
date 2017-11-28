@@ -111,7 +111,7 @@ searchDir(searchRoot, function (err) {
         return process.exit(0);
     }
     console.log();
-    console.log('Number of git repos found: ', chalk_1.default.green.bold(String(repos.length)));
+    logging_1.log.info('Number of git repos found: ', chalk_1.default.green.bold(String(repos.length)));
     console.log();
     logging_1.log.info('Git repos were found at these paths:');
     repos.forEach(function (r, i) {
@@ -227,11 +227,13 @@ searchDir(searchRoot, function (err) {
         if (err) {
             throw new Error(util.inspect(err));
         }
+        var problemCount = 0;
         Object.keys(results).forEach(function (k) {
             var hasProblem = results[k].some(function (v) {
                 return v.negativeResultValue || !v.positiveResultValue;
             });
             if (hasProblem) {
+                problemCount++;
                 console.log(' ---------------------------------------------------- ');
                 console.log();
                 logging_1.log.info('results for key: ', k);
@@ -250,6 +252,13 @@ searchDir(searchRoot, function (err) {
                 });
             }
         });
+        console.log();
+        if (problemCount < 1) {
+            logging_1.log.good('None of your git repos had an unclean state. Congratulations. Move on with your day.');
+        }
+        else {
+            logging_1.log.warning("You have an unclean git status in " + problemCount + " repo(s).");
+        }
         process.exit(0);
     });
 });

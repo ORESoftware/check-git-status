@@ -178,7 +178,7 @@ searchDir(searchRoot, function (err: Error) {
   }
   
   console.log();
-  console.log('Number of git repos found: ', chalk.green.bold(String(repos.length)));
+  log.info('Number of git repos found: ', chalk.green.bold(String(repos.length)));
   console.log();
   log.info('Git repos were found at these paths:');
   repos.forEach(function (r, i) {
@@ -330,6 +330,8 @@ searchDir(searchRoot, function (err: Error) {
       if (err) {
         throw new Error(util.inspect(err));
       }
+
+      let problemCount = 0;
       
       Object.keys(results).forEach(function (k) {
         
@@ -338,6 +340,8 @@ searchDir(searchRoot, function (err: Error) {
         });
         
         if (hasProblem) {
+
+          problemCount++;
           
           console.log(' ---------------------------------------------------- ');
           console.log();
@@ -367,6 +371,15 @@ searchDir(searchRoot, function (err: Error) {
         }
         
       });
+
+      console.log();
+
+      if(problemCount < 1){
+        log.good('None of your git repos had an unclean state. Congratulations. Move on with your day.')
+      }
+      else{
+        log.warning(`You have an unclean git status in ${problemCount} repo(s).`)
+      }
       
       process.exit(0);
       
