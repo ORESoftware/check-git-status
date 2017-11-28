@@ -23,7 +23,7 @@ import {options} from './lib/options';
 //////////////////////////////////////////////////////////////////////////
 
 process.once('exit', function (code: number) {
-  console.log('\n');
+  console.log();
   log.info('NPM-Link-Up is exiting with code => ', code, '\n');
 });
 
@@ -59,7 +59,8 @@ let opts: INPMLinkUpOpts, parser = dashdash.createParser({options});
 try {
   opts = parser.parse(process.argv);
 } catch (e) {
-  console.error(' => CLI parsing error: %s', e.message);
+  console.log();
+  log.error('CLI parsing error: ', e.message);
   process.exit(1);
 }
 
@@ -285,7 +286,7 @@ searchDir(searchRoot, function (err: Error) {
 
   async.eachLimit(repos, 1, function (r: string, cb: Function) {
 
-      const v = results[r] = [];
+      const v = results[r] = [] as any;
       const commands = getCommands();
 
       async.eachLimit(commands, 1, function (c: any, cb: Function) {

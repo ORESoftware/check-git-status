@@ -12,7 +12,7 @@ var cwd = process.cwd();
 var logging_1 = require("./lib/logging");
 var options_1 = require("./lib/options");
 process.once('exit', function (code) {
-    console.log('\n');
+    console.log();
     logging_1.log.info('NPM-Link-Up is exiting with code => ', code, '\n');
 });
 var ignorables = {
@@ -24,7 +24,8 @@ try {
     opts = parser.parse(process.argv);
 }
 catch (e) {
-    console.error(' => CLI parsing error: %s', e.message);
+    console.log();
+    logging_1.log.error('CLI parsing error: ', e.message);
     process.exit(1);
 }
 if (opts.version) {
