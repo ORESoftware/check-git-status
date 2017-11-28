@@ -178,7 +178,7 @@ searchDir(searchRoot, function (err: Error) {
   }
   
   console.log();
-  console.log('Number of git repos found: ', chalk.green.bold(String(repos.length)));
+  log.info('Number of git repos found: ', chalk.green.bold(String(repos.length)));
   console.log();
   log.info('Git repos were found at these paths:');
   repos.forEach(function (r, i) {
@@ -328,7 +328,7 @@ searchDir(searchRoot, function (err: Error) {
     function (err: Error) {
       
       if (err) {
-        throw new Error(util.inspect(err));
+        throw err.stack || new Error(util.inspect(err));
       }
       
       Object.keys(results).forEach(function (k) {
@@ -342,7 +342,7 @@ searchDir(searchRoot, function (err: Error) {
           console.log(' ---------------------------------------------------- ');
           console.log();
           
-          log.info('results for key: ', k);
+          log.info(chalk.red.bold('Results for repo with path: '), chalk.black.bold(k));
           results[k].forEach(function (v) {
             
             console.log();

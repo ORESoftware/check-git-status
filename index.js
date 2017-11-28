@@ -111,7 +111,7 @@ searchDir(searchRoot, function (err) {
         return process.exit(0);
     }
     console.log();
-    console.log('Number of git repos found: ', chalk_1.default.green.bold(String(repos.length)));
+    logging_1.log.info('Number of git repos found: ', chalk_1.default.green.bold(String(repos.length)));
     console.log();
     logging_1.log.info('Git repos were found at these paths:');
     repos.forEach(function (r, i) {
@@ -225,7 +225,7 @@ searchDir(searchRoot, function (err) {
         }, cb);
     }, function (err) {
         if (err) {
-            throw new Error(util.inspect(err));
+            throw err.stack || new Error(util.inspect(err));
         }
         Object.keys(results).forEach(function (k) {
             var hasProblem = results[k].some(function (v) {
@@ -234,7 +234,7 @@ searchDir(searchRoot, function (err) {
             if (hasProblem) {
                 console.log(' ---------------------------------------------------- ');
                 console.log();
-                logging_1.log.info('results for key: ', k);
+                logging_1.log.info(chalk_1.default.red.bold('Results for repo with path: '), chalk_1.default.black.bold(k));
                 results[k].forEach(function (v) {
                     console.log();
                     logging_1.log.info('Command name:', chalk_1.default.magenta(v.commandName));
