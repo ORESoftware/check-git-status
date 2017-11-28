@@ -139,6 +139,9 @@ searchDir(searchRoot, function (err) {
                     if (String(stdout).match(/Untracked files/i)) {
                         return true;
                     }
+                    if (String(stdout).match(/unmerged paths/i)) {
+                        return true;
+                    }
                 },
                 isPositiveResultValue: function (stdout, stderr) {
                     if (String(stdout).match(/nothing to commit, working directory clean/i)) {
@@ -155,8 +158,14 @@ searchDir(searchRoot, function (err) {
                     if (String(stdout).match(/Changes not staged for commit/i)) {
                         return 'Changes not staged for commit';
                     }
+                    if (String(stdout).match(/Changes to be committed/i)) {
+                        return 'Changes to be committed';
+                    }
                     if (String(stdout).match(/Untracked files/i)) {
                         return 'Untracked files';
+                    }
+                    if (String(stdout).match(/unmerged paths/i)) {
+                        return 'Unmerged paths';
                     }
                     return 'unknown negative result';
                 }
@@ -227,11 +236,13 @@ searchDir(searchRoot, function (err) {
         if (err) {
             throw err.stack || new Error(util.inspect(err));
         }
+        var problemCount = 0;
         Object.keys(results).forEach(function (k) {
             var hasProblem = results[k].some(function (v) {
                 return v.negativeResultValue || !v.positiveResultValue;
             });
             if (hasProblem) {
+                problemCount++;
                 console.log(' ---------------------------------------------------- ');
                 console.log();
                 logging_1.log.info(chalk_1.default.red.bold('Results for repo with path: '), chalk_1.default.black.bold(k));
@@ -250,6 +261,13 @@ searchDir(searchRoot, function (err) {
                 });
             }
         });
+        console.log();
+        if (problemCount < 1) {
+            logging_1.log.good('None of your git repos had an unclean state. Congratulations. Move on with your day.');
+        }
+        else {
+            logging_1.log.warning("You have an unclean git status in " + problemCount + " repo(s).");
+        }
         process.exit(0);
     });
 });

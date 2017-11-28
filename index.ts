@@ -27,11 +27,15 @@ process.once('exit', function (code: number) {
   log.info('NPM-Link-Up is exiting with code => ', code, '\n');
 });
 
-const ignorables = {
-  
+interface Ignorables {
+  [key: string] : boolean
+}
+
+const ignorables = <Ignorables> {
+
   'node_modules': true,
   '.idea': true,
-  
+
 };
 
 //////////////////////////////////////////////////////////////
@@ -74,13 +78,13 @@ if (opts.help) {
 }
 
 if (opts.completion) {
-  
+
   let generatedBashCode = dashdash.bashCompletionFromOptions({
     name: 'check-git-status',
     options: options,
     includeHidden: true
   });
-  
+
   console.log(generatedBashCode);
   process.exit(0);
 }
@@ -105,11 +109,11 @@ let searchedPathCount = 0;
 const repos: Array<string> = [];
 
 const searchDir = function (dir: string, cb: Function) {
-  
+
   searchedPathCount++;
-  
+
   fs.readdir(dir, function (err, itemz) {
-    
+
     const items = itemz.filter(function (v) {
       if (ignorables[v]) {
         if (false) {
@@ -120,27 +124,27 @@ const searchDir = function (dir: string, cb: Function) {
       }
       return true;
     });
-    
+
     async.eachLimit(items, 3, function (item: string, cb: Function) {
-      
+
       const full = path.resolve(dir, item);
-      
+
       // if(ignorables[item]){
       //   log.warning('ignored path: ', full);
       //   return process.nextTick(cb);
       // }
-      
+
       fs.stat(full, function (err, stats) {
-        
+
         if (err) {
           log.warning(err.message);
           return cb(null);
         }
-        
+
         if (!stats.isDirectory()) {
           return cb(null);
         }
-        
+
         if (path.basename(full) === '.git') {
           repos.push(path.dirname(full));
           cb(null);
@@ -148,51 +152,51 @@ const searchDir = function (dir: string, cb: Function) {
         else {
           searchDir(full, cb);
         }
-        
+
       });
-      
+
     }, cb);
-    
+
   });
-  
+
 };
 
 console.log();
 log.info(chalk.green.bold('Searching for all git repos within this path:'), chalk.black.bold(searchRoot));
 
 searchDir(searchRoot, function (err: Error) {
-  
+
   if (err) {
     throw err;
   }
-  
+
   log.info('This many paths were ignored:', chalk.green.bold(String(ignoredPathCount)));
   log.info('This many directories were searched:', chalk.green.bold(String(searchedPathCount)));
-  
+
   log.info(chalk.green.bold('Searching has completed.'));
   console.log();
-  
+
   if (repos.length < 1) {
     log.warning('no git repos could be found.');
     return process.exit(0);
   }
-  
+
   console.log();
   log.info('Number of git repos found: ', chalk.green.bold(String(repos.length)));
   console.log();
   log.info('Git repos were found at these paths:');
   repos.forEach(function (r, i) {
-    log.info(String(`[${i + 1}]`),chalk.magenta(r));
+    log.info(String(`[${i + 1}]`), chalk.magenta(r));
   });
   console.log();
-  
-  const results = {};
-  
+
+  const results = {} as any;
+
   const firstCmds = ['set -e; cd "${git_root_path}"'];
-  
+
   const getCommands = function () {
-    
-    return [{
+
+    return <any>[{
       commandName: '"Git status"',
       exitCode: null,
       stdout: null,
@@ -201,48 +205,60 @@ searchDir(searchRoot, function (err: Error) {
       negativeResultValue: null,
       command: firstCmds.concat(['echo "$(git status)"']),
       isNegativeResultValue: function (stdout: string, stderr: string): boolean {
-        
+
         if (String(stdout).match(/Changes not staged for commit/i)) {
           return true;
         }
-        
+
         if (String(stdout).match(/Changes to be committed/i)) {
           return true;
         }
-        
+
         if (String(stdout).match(/Untracked files/i)) {
           return true;
         }
+
+        if (String(stdout).match(/unmerged paths/i)) {
+          return true;
+        }
       },
-      
+
       isPositiveResultValue: function (stdout: string, stderr: string): boolean {
         if (String(stdout).match(/nothing to commit, working directory clean/i)) {
           return true;
         }
       },
-      
+
       processPositiveResultValue: function (stdout: string, stderr: string): string {
-        
+
         if (String(stdout).match(/nothing to commit, working directory clean/)) {
           return 'nothing to commit, working directory clean';
         }
-        
+
         return String(stdout).trim();
       },
-      
+
       processNegativeResultValue: function (stdout: string, stderr: string): string {
         if (String(stdout).match(/Changes not staged for commit/i)) {
           return 'Changes not staged for commit';
         }
-        
+
+        if (String(stdout).match(/Changes to be committed/i)) {
+          return 'Changes to be committed';
+        }
+
         if (String(stdout).match(/Untracked files/i)) {
           return 'Untracked files';
         }
-        
+
+        if (String(stdout).match(/unmerged paths/i)) {
+          return 'Unmerged paths';
+        }
+
         return 'unknown negative result';
       }
     },
-      
+
       {
         commandName: '"Git branch name"',
         exitCode: null,
@@ -263,48 +279,48 @@ searchDir(searchRoot, function (err: Error) {
         processNegativeResultValue: function (stdout: string, stderr: string): string {
           return String(stdout).trim();
         }
-        
+
       }];
   };
-  
+
   async.eachLimit(repos, 1, function (r: string, cb: Function) {
-      
+
       const v = results[r] = [];
       const commands = getCommands();
-      
-      async.eachLimit(commands, 1, function (c: Object, cb: Function) {
-        
+
+      async.eachLimit(commands, 1, function (c: any, cb: Function) {
+
         const k = cp.spawn('bash', [], {
           env: Object.assign({}, process.env, {
             git_root_path: r
           })
         });
-        
+
         process.nextTick(function () {
           k.stdin.end(c.command.join(';') + '\n');
         });
-        
+
         let stdout = '';
         let stderr = '';
-        
+
         k.stderr.on('data', function (d) {
           stderr += String(d);
         });
-        
+
         k.stdout.on('data', function (d) {
           stdout += String(d);
         });
-        
+
         k.once('exit', function (code) {
-          
+
           c.exitCode = code;
           c.stderr = String(stderr).trim();
           c.stdout = String(stdout).trim();
-          
+
           if (c.isNegativeResultValue(stdout, stderr)) {
             c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) || 'unknown negative result.';
           }
-          
+
           else {
             if (c.isPositiveResultValue(stdout, stderr)) {
               c.positiveResultValue = c.processPositiveResultValue(stdout, stderr) || 'unknown positive result.';
@@ -314,40 +330,45 @@ searchDir(searchRoot, function (err: Error) {
                 'a positive result could not be acquired, but no clear negative result was found.'
             }
           }
-          
+
           v.push(JSON.parse(JSON.stringify(c)));
-          
+
           cb(null);
-          
+
         });
-        
+
       }, cb);
-      
+
     },
-    
+
     function (err: Error) {
-      
+
       if (err) {
         throw err.stack || new Error(util.inspect(err));
       }
-      
+
+      let problemCount = 0;
+
       Object.keys(results).forEach(function (k) {
-        
-        const hasProblem = results[k].some(function (v) {
+
+        const hasProblem = results[k].some(function (v: any) {
           return v.negativeResultValue || !v.positiveResultValue;
         });
-        
+
         if (hasProblem) {
-          
+
+          problemCount++;
+
           console.log(' ---------------------------------------------------- ');
           console.log();
-          
+
           log.info(chalk.red.bold('Results for repo with path: '), chalk.black.bold(k));
-          results[k].forEach(function (v) {
-            
+
+          results[k].forEach(function (v: any) {
+
             console.log();
             log.info('Command name:', chalk.magenta(v.commandName));
-            
+
             if (v.positiveResultValue) {
               log.info(chalk.cyan('Positive result:'),
                 v.positiveResultValue);
@@ -355,22 +376,31 @@ searchDir(searchRoot, function (err: Error) {
             else {
               log.info(chalk.yellow('Negative result value:'),
                 v.negativeResultValue || 'unknown negative result.');
-              
+
               if (String(v.stderr).trim()) {
                 log.warning('stderr:', v.stderr);
               }
-              
+
             }
-            
+
           });
-          
+
         }
-        
+
       });
-      
+
+      console.log();
+
+      if (problemCount < 1) {
+        log.good('None of your git repos had an unclean state. Congratulations. Move on with your day.')
+      }
+      else {
+        log.warning(`You have an unclean git status in ${problemCount} repo(s).`)
+      }
+
       process.exit(0);
-      
+
     });
-  
+
 });
 
