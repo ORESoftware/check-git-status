@@ -139,6 +139,9 @@ searchDir(searchRoot, function (err) {
                     if (String(stdout).match(/Untracked files/i)) {
                         return true;
                     }
+                    if (String(stdout).match(/unmerged paths/i)) {
+                        return true;
+                    }
                 },
                 isPositiveResultValue: function (stdout, stderr) {
                     if (String(stdout).match(/nothing to commit, working directory clean/i)) {
@@ -155,8 +158,14 @@ searchDir(searchRoot, function (err) {
                     if (String(stdout).match(/Changes not staged for commit/i)) {
                         return 'Changes not staged for commit';
                     }
+                    if (String(stdout).match(/Changes to be committed/i)) {
+                        return 'Changes to be committed';
+                    }
                     if (String(stdout).match(/Untracked files/i)) {
                         return 'Untracked files';
+                    }
+                    if (String(stdout).match(/unmerged paths/i)) {
+                        return 'Unmerged paths';
                     }
                     return 'unknown negative result';
                 }
