@@ -1,6 +1,6 @@
 {
   "name": "check-git-status",
-  "version": "0.0.102",
+  "version": "0.0.103",
   "description": "Checks the Git status of all Git repos on your filesystem within a directory.",
   "main": "index.js",
   "scripts": {
