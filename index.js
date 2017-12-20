@@ -9,6 +9,7 @@ var chalk_1 = require("chalk");
 var dashdash = require('dashdash');
 var async = require('async');
 var cwd = process.cwd();
+var commands = require("./lib/commands");
 var logging_1 = require("./lib/logging");
 var options_1 = require("./lib/options");
 process.once('exit', function (code) {
@@ -122,76 +123,11 @@ searchDir(searchRoot, function (err) {
     var results = {};
     var firstCmds = ['set -e; cd "${git_root_path}"'];
     var getCommands = function () {
-        return [{
-                commandName: '"Git status"',
-                exitCode: null,
-                stdout: null,
-                stderr: null,
-                positiveResultValue: null,
-                negativeResultValue: null,
-                command: firstCmds.concat(['echo "$(git status)"']),
-                isNegativeResultValue: function (stdout, stderr) {
-                    if (String(stdout).match(/Changes not staged for commit/i)) {
-                        return true;
-                    }
-                    if (String(stdout).match(/Changes to be committed/i)) {
-                        return true;
-                    }
-                    if (String(stdout).match(/Untracked files/i)) {
-                        return true;
-                    }
-                    if (String(stdout).match(/unmerged paths/i)) {
-                        return true;
-                    }
-                },
-                isPositiveResultValue: function (stdout, stderr) {
-                    if (String(stdout).match(/nothing to commit, working directory clean/i)) {
-                        return true;
-                    }
-                },
-                processPositiveResultValue: function (stdout, stderr) {
-                    if (String(stdout).match(/nothing to commit, working directory clean/)) {
-                        return 'nothing to commit, working directory clean';
-                    }
-                    return String(stdout).trim();
-                },
-                processNegativeResultValue: function (stdout, stderr) {
-                    if (String(stdout).match(/Changes not staged for commit/i)) {
-                        return 'Changes not staged for commit';
-                    }
-                    if (String(stdout).match(/Changes to be committed/i)) {
-                        return 'Changes to be committed';
-                    }
-                    if (String(stdout).match(/Untracked files/i)) {
-                        return 'Untracked files';
-                    }
-                    if (String(stdout).match(/unmerged paths/i)) {
-                        return 'Unmerged paths';
-                    }
-                    return 'unknown negative result';
-                }
-            },
-            {
-                commandName: '"Git branch name"',
-                exitCode: null,
-                stdout: null,
-                stderr: null,
-                positiveResultValue: null,
-                negativeResultValue: null,
-                command: firstCmds.concat(['echo "$(git rev-parse --abbrev-ref HEAD)"']),
-                isNegativeResultValue: function (stdout, stderr) {
-                    return false;
-                },
-                isPositiveResultValue: function (stdout, stderr) {
-                    return String(stdout).trim() === 'master';
-                },
-                processPositiveResultValue: function (stdout, stderr) {
-                    return String(stdout).trim();
-                },
-                processNegativeResultValue: function (stdout, stderr) {
-                    return String(stdout).trim();
-                }
-            }];
+        return [
+            commands.getGitStatus(firstCmds),
+            commands.getBranchName(firstCmds),
+            commands.getCommitDifference(firstCmds)
+        ];
     };
     async.eachLimit(repos, 1, function (r, cb) {
         var v = results[r] = [];
