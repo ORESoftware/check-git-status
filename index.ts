@@ -92,7 +92,9 @@ if (opts.completion) {
 }
 
 if (!opts.search_root) {
-  throw new Error('no "--search-root" option provided.');
+  console.error();
+  log.error(chalk.red('You need to pass a "--search-root" option, like so: `chkgits --search-root=.`'));
+  process.exit(1);
 }
 
 const searchRoot: string =
@@ -240,7 +242,7 @@ searchDir(searchRoot, function (err: Error) {
           c.stdout = String(stdout).trim();
           
           if (c.isNegativeResultValue(stdout, stderr)) {
-            c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) || 'unknown negative result.';
+            c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) || 'unknown negative result [c].';
           }
           
           else {
@@ -281,10 +283,10 @@ searchDir(searchRoot, function (err: Error) {
           
           problemCount++;
           
-          console.log(' ---------------------------------------------------- ');
+          console.log(' ---------------------------------------------------------------------------------------------');
           console.log();
           
-          log.info(chalk.red.bold('Results for repo with path: '), chalk.black.bold(k));
+          log.info(chalk.magenta.italic.bold('Results for repo with path: '), chalk.black.bold(k));
           
           results[k].forEach(function (v: any) {
             
@@ -296,8 +298,7 @@ searchDir(searchRoot, function (err: Error) {
                 v.positiveResultValue);
             }
             else {
-              log.info(chalk.yellow('Negative result value:'),
-                v.negativeResultValue || 'unknown negative result.');
+              log.info(chalk.yellow('Negative result value:'), v.negativeResultValue || 'unknown negative result [b].');
               
               if (String(v.stderr).trim()) {
                 log.warning('stderr:', v.stderr);
@@ -317,7 +318,7 @@ searchDir(searchRoot, function (err: Error) {
         log.good('None of your git repos had an unclean state. Congratulations. Move on with your day.')
       }
       else {
-        log.warning(`You have an unclean git status in ${problemCount} repo(s).`)
+        log.warning(`You have problems to address in ${problemCount} repo(s).`)
       }
       
       process.exit(0);

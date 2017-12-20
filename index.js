@@ -51,7 +51,9 @@ if (opts.completion) {
     process.exit(0);
 }
 if (!opts.search_root) {
-    throw new Error('no "--search-root" option provided.');
+    console.error();
+    logging_1.log.error(chalk_1.default.red('You need to pass a "--search-root" option, like so: `chkgits --search-root=.`'));
+    process.exit(1);
 }
 var searchRoot = String(path.isAbsolute(String(opts.search_root)) ? opts.search_root : path.resolve(cwd + '/' + opts.search_root));
 try {
@@ -154,7 +156,7 @@ searchDir(searchRoot, function (err) {
                 c.stderr = String(stderr).trim();
                 c.stdout = String(stdout).trim();
                 if (c.isNegativeResultValue(stdout, stderr)) {
-                    c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) || 'unknown negative result.';
+                    c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) || 'unknown negative result [c].';
                 }
                 else {
                     if (c.isPositiveResultValue(stdout, stderr)) {
@@ -180,9 +182,9 @@ searchDir(searchRoot, function (err) {
             });
             if (hasProblem) {
                 problemCount++;
-                console.log(' ---------------------------------------------------- ');
+                console.log(' ---------------------------------------------------------------------------------------------');
                 console.log();
-                logging_1.log.info(chalk_1.default.red.bold('Results for repo with path: '), chalk_1.default.black.bold(k));
+                logging_1.log.info(chalk_1.default.magenta.italic.bold('Results for repo with path: '), chalk_1.default.black.bold(k));
                 results[k].forEach(function (v) {
                     console.log();
                     logging_1.log.info('Command name:', chalk_1.default.magenta(v.commandName));
@@ -190,7 +192,7 @@ searchDir(searchRoot, function (err) {
                         logging_1.log.info(chalk_1.default.cyan('Positive result:'), v.positiveResultValue);
                     }
                     else {
-                        logging_1.log.info(chalk_1.default.yellow('Negative result value:'), v.negativeResultValue || 'unknown negative result.');
+                        logging_1.log.info(chalk_1.default.yellow('Negative result value:'), v.negativeResultValue || 'unknown negative result [b].');
                         if (String(v.stderr).trim()) {
                             logging_1.log.warning('stderr:', v.stderr);
                         }
@@ -203,7 +205,7 @@ searchDir(searchRoot, function (err) {
             logging_1.log.good('None of your git repos had an unclean state. Congratulations. Move on with your day.');
         }
         else {
-            logging_1.log.warning("You have an unclean git status in " + problemCount + " repo(s).");
+            logging_1.log.warning("You have problems to address in " + problemCount + " repo(s).");
         }
         process.exit(0);
     });

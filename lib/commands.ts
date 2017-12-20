@@ -33,7 +33,11 @@ export const getGitStatus = function (firstCmds: Array<string>) {
     },
     
     isPositiveResultValue: function (stdout: string, stderr: string): boolean {
-      if (String(stdout).match(/nothing to commit, working directory clean/i)) {
+      if (String(stdout).trim().match(/nothing to commit/i)) {
+        return true;
+      }
+      
+      if(String(stdout).trim().match(/working directory clean/i)){
         return true;
       }
     },
@@ -48,23 +52,7 @@ export const getGitStatus = function (firstCmds: Array<string>) {
     },
     
     processNegativeResultValue: function (stdout: string, stderr: string): string {
-      if (String(stdout).match(/Changes not staged for commit/i)) {
-        return 'Changes not staged for commit';
-      }
-      
-      if (String(stdout).match(/Changes to be committed/i)) {
-        return 'Changes to be committed';
-      }
-      
-      if (String(stdout).match(/Untracked files/i)) {
-        return 'Untracked files';
-      }
-      
-      if (String(stdout).match(/unmerged paths/i)) {
-        return 'Unmerged paths';
-      }
-      
-      return 'unknown negative result';
+      return String(stdout).trim() || 'unknown negative result [a]';
     }
   });
 };
