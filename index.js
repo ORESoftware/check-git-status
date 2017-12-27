@@ -4,7 +4,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var util = require("util");
 var path = require("path");
 var fs = require("fs");
-var cp = require("child_process");
 var chalk_1 = require("chalk");
 var dashdash = require('dashdash');
 var async = require('async');
@@ -12,6 +11,7 @@ var cwd = process.cwd();
 var commands = require("./lib/commands");
 var logging_1 = require("./lib/logging");
 var options_1 = require("./lib/options");
+var run_1 = require("./lib/run");
 process.once('exit', function (code) {
     console.log();
     logging_1.log.info('NPM-Link-Up is exiting with code => ', code, '\n');
@@ -131,49 +131,13 @@ searchDir(searchRoot, function (err) {
             commands.getCommitDifference(firstCmds)
         ];
     };
-    async.eachLimit(repos, 1, function (r, cb) {
+    async.eachLimit(repos, 3, function (r, cb) {
         var v = results[r] = [];
         var commands = getCommands();
-        async.eachLimit(commands, 1, function (c, cb) {
-            var k = cp.spawn('bash', [], {
-                env: Object.assign({}, process.env, {
-                    git_root_path: r
-                })
-            });
-            process.nextTick(function () {
-                k.stdin.end(c.command.join(';') + '\n');
-            });
-            var stdout = '';
-            var stderr = '';
-            k.stderr.on('data', function (d) {
-                stderr += String(d);
-            });
-            k.stdout.on('data', function (d) {
-                stdout += String(d);
-            });
-            k.once('exit', function (code) {
-                c.exitCode = code;
-                c.stderr = String(stderr).trim();
-                c.stdout = String(stdout).trim();
-                if (c.isNegativeResultValue(stdout, stderr)) {
-                    c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) || 'unknown negative result [c].';
-                }
-                else {
-                    if (c.isPositiveResultValue(stdout, stderr)) {
-                        c.positiveResultValue = c.processPositiveResultValue(stdout, stderr) || 'unknown positive result.';
-                    }
-                    else {
-                        c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) ||
-                            'a positive result could not be acquired, but no clear negative result was found.';
-                    }
-                }
-                v.push(JSON.parse(JSON.stringify(c)));
-                cb(null);
-            });
-        }, cb);
-    }, function (err) {
-        if (err) {
-            throw err.stack || new Error(util.inspect(err));
+        async.eachLimit(commands, 1, run_1.makeRun(v, r), cb);
+    }, function (e) {
+        if (e) {
+            throw e.stack || new Error(util.inspect(e));
         }
         var problemCount = 0;
         Object.keys(results).forEach(function (k) {

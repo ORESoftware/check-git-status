@@ -20,6 +20,7 @@ import * as commands from './lib/commands';
 //project
 import {log} from './lib/logging';
 import {options} from './lib/options';
+import {makeRun} from './lib/run';
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -33,10 +34,8 @@ interface Ignorables {
 }
 
 const ignorables = <Ignorables> {
-  
   'node_modules': true,
   '.idea': true,
-  
 };
 
 //////////////////////////////////////////////////////////////
@@ -51,6 +50,29 @@ export interface INPMLinkUpOpts {
   install_all: boolean,
   self_link_all: boolean,
   treeify: boolean
+}
+
+export interface ICommand {
+  exitCode?: number,
+  stdout?: string,
+  stderr?: string,
+  positiveResultValue: any,
+  negativeResultValue: any,
+  commandName: string,
+  command: Array<string>,
+  isNegativeResultValue: (stdout: string, stderr: string) => boolean;
+  isPositiveResultValue: (stdout: string, stderr: string) => boolean;
+  processPositiveResultValue: (stdout: string, stderr: string) => string;
+  processNegativeResultValue: (stdout: string, stderr: string) => string;
+}
+
+export interface IResultValue {
+  stderr?: string;
+  stdout?:string;
+}
+
+export interface IResult {
+  [key:string]: IResultValue
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -207,68 +229,17 @@ searchDir(searchRoot, function (err: Error) {
     ];
   };
   
-  async.eachLimit(repos, 1, function (r: string, cb: Function) {
+  async.eachLimit(repos, 3, function (r: string, cb: Function) {
       
       const v = results[r] = [] as any;
       const commands = getCommands();
-      
-      async.eachLimit(commands, 1, function (c: any, cb: Function) {
-        
-        const k = cp.spawn('bash', [], {
-          env: Object.assign({}, process.env, {
-            git_root_path: r
-          })
-        });
-        
-        process.nextTick(function () {
-          k.stdin.end(c.command.join(';') + '\n');
-        });
-        
-        let stdout = '';
-        let stderr = '';
-        
-        k.stderr.on('data', function (d) {
-          stderr += String(d);
-        });
-        
-        k.stdout.on('data', function (d) {
-          stdout += String(d);
-        });
-        
-        k.once('exit', function (code) {
-          
-          c.exitCode = code;
-          c.stderr = String(stderr).trim();
-          c.stdout = String(stdout).trim();
-          
-          if (c.isNegativeResultValue(stdout, stderr)) {
-            c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) || 'unknown negative result [c].';
-          }
-          
-          else {
-            if (c.isPositiveResultValue(stdout, stderr)) {
-              c.positiveResultValue = c.processPositiveResultValue(stdout, stderr) || 'unknown positive result.';
-            }
-            else {
-              c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) ||
-                'a positive result could not be acquired, but no clear negative result was found.'
-            }
-          }
-          
-          v.push(JSON.parse(JSON.stringify(c)));
-          
-          cb(null);
-          
-        });
-        
-      }, cb);
-      
+      async.eachLimit(commands, 1, makeRun(v, r), cb);
     },
     
-    function (err: Error) {
+    function (e: Error) {
       
-      if (err) {
-        throw err.stack || new Error(util.inspect(err));
+      if (e) {
+        throw e.stack || new Error(util.inspect(e));
       }
       
       let problemCount = 0;

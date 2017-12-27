@@ -1,5 +1,9 @@
+import {ICommand} from "../index";
+
+////////////////////////////////////////////////////////////////////////////////
+
 const getDefaultValues = function () {
-  return <any>{
+  return <Partial<ICommand>> {
     exitCode: null,
     stdout: null,
     stderr: null,
@@ -8,9 +12,11 @@ const getDefaultValues = function () {
   }
 };
 
-export const getGitStatus = function (firstCmds: Array<string>) {
+//////////////////////////////////////////////////////////////////////////////////
+
+export const getGitStatus = function (firstCmds: Array<string>): ICommand {
   
-  return <any> Object.assign(getDefaultValues(), {
+  return <ICommand> Object.assign(getDefaultValues(), {
     commandName: '"Git status"',
     command: firstCmds.concat(['echo "$(git status)"']),
     isNegativeResultValue: function (stdout: string, stderr: string): boolean {
@@ -37,17 +43,12 @@ export const getGitStatus = function (firstCmds: Array<string>) {
         return true;
       }
       
-      if(String(stdout).trim().match(/working directory clean/i)){
+      if (String(stdout).trim().match(/working directory clean/i)) {
         return true;
       }
     },
     
     processPositiveResultValue: function (stdout: string, stderr: string): string {
-      
-      if (String(stdout).match(/nothing to commit, working directory clean/)) {
-        return 'nothing to commit, working directory clean';
-      }
-      
       return String(stdout).trim();
     },
     
@@ -57,9 +58,9 @@ export const getGitStatus = function (firstCmds: Array<string>) {
   });
 };
 
-export const getCommitDifference = function (firstCmds: Array<string>) {
+export const getCommitDifference = function (firstCmds: Array<string>): ICommand {
   
-  return <any> Object.assign(getDefaultValues(), {
+  return <ICommand> Object.assign(getDefaultValues(), {
     
     commandName: '"Git commit difference"',
     command: firstCmds.concat([`echo "$(git log --oneline $(npm view . gitHead)..$(git rev-parse HEAD) | wc -l | sed 's/^ *//;s/ *$//')"`]),
@@ -79,9 +80,9 @@ export const getCommitDifference = function (firstCmds: Array<string>) {
   });
 };
 
-export const getBranchName = function (firstCmds: Array<string>) {
+export const getBranchName = function (firstCmds: Array<string>): ICommand {
   
-  return <any> Object.assign(getDefaultValues(), {
+  return <ICommand> Object.assign(getDefaultValues(), {
     
     commandName: '"Git branch name"',
     command: firstCmds.concat(['echo "$(git rev-parse --abbrev-ref HEAD)"']),
