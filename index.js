@@ -71,9 +71,7 @@ var searchDir = function (dir, cb) {
     fs.readdir(dir, function (err, itemz) {
         var items = itemz.filter(function (v) {
             if (ignorables[v]) {
-                if (false) {
-                    logging_1.log.warning('ignored path: ', path.resolve(dir + '/' + v));
-                }
+                logging_1.log.warning('ignored path: ', path.resolve(dir + '/' + v));
                 ignoredPathCount++;
                 return false;
             }

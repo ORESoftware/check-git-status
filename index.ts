@@ -68,11 +68,11 @@ export interface ICommand {
 
 export interface IResultValue {
   stderr?: string;
-  stdout?:string;
+  stdout?: string;
 }
 
 export interface IResult {
-  [key:string]: IResultValue
+  [key: string]: IResultValue
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -142,9 +142,7 @@ const searchDir = function (dir: string, cb: Function) {
     
     const items = itemz.filter(function (v) {
       if (ignorables[v]) {
-        if (false) {
-          log.warning('ignored path: ', path.resolve(dir + '/' + v));
-        }
+        log.warning('ignored path: ', path.resolve(dir + '/' + v));
         ignoredPathCount++;
         return false;
       }
@@ -154,11 +152,6 @@ const searchDir = function (dir: string, cb: Function) {
     async.eachLimit(items, 3, function (item: string, cb: Function) {
       
       const full = path.resolve(dir, item);
-      
-      // if(ignorables[item]){
-      //   log.warning('ignored path: ', full);
-      //   return process.nextTick(cb);
-      // }
       
       fs.stat(full, function (err, stats) {
         
@@ -188,7 +181,11 @@ const searchDir = function (dir: string, cb: Function) {
 };
 
 console.log();
-log.info(chalk.green.bold('Searching for all git repos within this path:'), chalk.black.bold(searchRoot));
+
+log.info(
+  chalk.green.bold('Searching for all git repos within this path:'),
+  chalk.black.bold(searchRoot)
+);
 
 searchDir(searchRoot, function (err: Error) {
   
@@ -207,22 +204,19 @@ searchDir(searchRoot, function (err: Error) {
     return process.exit(0);
   }
   
-  console.log();
-  log.info('Number of git repos found: ', chalk.green.bold(String(repos.length)));
-  console.log();
-  log.info('Git repos were found at these paths:');
+  console.log(); log.info('Number of git repos found: ', chalk.green.bold(String(repos.length)));
+  console.log(); log.info('Git repos were found at these paths:');
+  
   repos.forEach(function (r, i) {
     log.info(String(`[${i + 1}]`), chalk.magenta(r));
   });
+  
   console.log();
-  
   const results = {} as any;
-  
   const firstCmds = ['set -e; cd "${git_root_path}"'];
   
-  const getCommands = function () {
-    
-    return <any>[
+  const getCommands = function (): Array<ICommand> {
+    return [
       commands.getGitStatus(firstCmds),
       commands.getBranchName(firstCmds),
       commands.getCommitDifference(firstCmds)
