@@ -62,8 +62,39 @@ export const getCommitDifference = function (firstCmds: Array<string>): ICommand
   
   return <ICommand> Object.assign(getDefaultValues(), {
     
-    commandName: '"Git commit difference"',
-    command: firstCmds.concat([`echo "$(git log --oneline $(npm view . gitHead)..$(git rev-parse HEAD) | wc -l | sed 's/^ *//;s/ *$//')"`]),
+    commandName: '"Git commit difference [npm <--> local]"',
+    command: firstCmds.concat(
+      [
+        `echo "$(git log --oneline $(npm view . gitHead)..$(git rev-parse HEAD) | wc -l | sed 's/^ *//;s/ *$//')"`
+      ]
+    ),
+    isNegativeResultValue: function (stdout: string, stderr: string): boolean {
+      return parseInt(String(stdout).trim()) > 0;
+    },
+    isPositiveResultValue: function (stdout: string, stderr: string): boolean {
+      return parseInt(String(stdout).trim()) < 1;
+    },
+    processPositiveResultValue: function (stdout: string, stderr: string): string {
+      return String(stdout).trim();
+    },
+    processNegativeResultValue: function (stdout: string, stderr: string): string {
+      return String(stdout).trim();
+    }
+    
+  });
+};
+
+export const getCommitDifferenceGithub = function (firstCmds: Array<string>): ICommand {
+  
+  return <ICommand> Object.assign(getDefaultValues(), {
+    
+    commandName: '"Git commit difference [origin/master <--> local]"',
+    command: firstCmds.concat(
+      [
+        `git fetch origin`,
+        `echo "$(git log --oneline $(git rev-parse origin/master)..$(git rev-parse HEAD) | wc -l | sed 's/^ *//;s/ *$//')"`
+      ]
+    ),
     isNegativeResultValue: function (stdout: string, stderr: string): boolean {
       return parseInt(String(stdout).trim()) > 0;
     },

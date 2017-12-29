@@ -126,7 +126,8 @@ searchDir(searchRoot, function (err) {
         return [
             commands.getGitStatus(firstCmds),
             commands.getBranchName(firstCmds),
-            commands.getCommitDifference(firstCmds)
+            commands.getCommitDifference(firstCmds),
+            commands.getCommitDifferenceGithub(firstCmds)
         ];
     };
     async.eachLimit(repos, 3, function (r, cb) {

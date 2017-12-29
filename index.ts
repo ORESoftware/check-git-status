@@ -219,7 +219,8 @@ searchDir(searchRoot, function (err: Error) {
     return [
       commands.getGitStatus(firstCmds),
       commands.getBranchName(firstCmds),
-      commands.getCommitDifference(firstCmds)
+      commands.getCommitDifference(firstCmds),
+      commands.getCommitDifferenceGithub(firstCmds)
     ];
   };
   
