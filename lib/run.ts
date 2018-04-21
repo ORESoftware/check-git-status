@@ -1,9 +1,9 @@
+'use strict';
+
 import * as cp from 'child_process';
 import {ICommand} from "../index";
 
-
 ///////////////////////////////////////////////////////////////////
-
 
 export const makeRun = function (v: Array<ICommand>, r: string) {
   

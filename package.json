@@ -8,6 +8,7 @@
   },
   "bin": {
     "check-git-status": "index.js",
+    "check_git_status": "index.js",
     "chkgits": "index.js"
   },
   "repository": {

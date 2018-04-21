@@ -1,3 +1,5 @@
+'use strict';
+
 import chalk from 'chalk';
 const name = ' [check-git-status] ';
 
