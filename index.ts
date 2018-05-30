@@ -102,13 +102,13 @@ if (opts.help) {
 }
 
 if (opts.completion) {
-  
+
   let generatedBashCode = dashdash.bashCompletionFromOptions({
     name: 'check-git-status',
     options: options,
     includeHidden: true
   });
-  
+
   console.log(generatedBashCode);
   process.exit(0);
 }
@@ -135,11 +135,11 @@ let searchedPathCount = 0;
 const repos: Array<string> = [];
 
 const searchDir = function (dir: string, cb: Function) {
-  
+
   searchedPathCount++;
-  
+
   fs.readdir(dir, function (err, itemz) {
-    
+
     const items = itemz.filter(function (v) {
       if (ignorables[v]) {
         log.warning('ignored path: ', path.resolve(dir + '/' + v));
@@ -148,22 +148,22 @@ const searchDir = function (dir: string, cb: Function) {
       }
       return true;
     });
-    
+
     async.eachLimit(items, 3, function (item: string, cb: Function) {
-      
+
       const full = path.resolve(dir, item);
-      
+
       fs.stat(full, function (err, stats) {
-        
+
         if (err) {
           log.warning(err.message);
           return cb(null);
         }
-        
+
         if (!stats.isDirectory()) {
           return cb(null);
         }
-        
+
         if (path.basename(full) === '.git') {
           repos.push(path.dirname(full));
           cb(null);
@@ -171,13 +171,13 @@ const searchDir = function (dir: string, cb: Function) {
         else {
           searchDir(full, cb);
         }
-        
+
       });
-      
+
     }, cb);
-    
+
   });
-  
+
 };
 
 console.log();
@@ -188,33 +188,35 @@ log.info(
 );
 
 searchDir(searchRoot, function (err: Error) {
-  
+
   if (err) {
     throw err;
   }
-  
+
   log.info('This many paths were ignored:', chalk.green.bold(String(ignoredPathCount)));
   log.info('This many directories were searched:', chalk.green.bold(String(searchedPathCount)));
-  
+
   log.info(chalk.green.bold('Searching has completed.'));
   console.log();
-  
+
   if (repos.length < 1) {
     log.warning('no git repos could be found.');
     return process.exit(0);
   }
-  
-  console.log(); log.info('Number of git repos found: ', chalk.green.bold(String(repos.length)));
-  console.log(); log.info('Git repos were found at these paths:');
-  
+
+  console.log();
+  log.info('Number of git repos found: ', chalk.green.bold(String(repos.length)));
+  console.log();
+  log.info('Git repos were found at these paths:');
+
   repos.forEach(function (r, i) {
     log.info(String(`[${i + 1}]`), chalk.magenta(r));
   });
-  
+
   console.log();
   const results = {} as any;
   const firstCmds = ['set -e; cd "${git_root_path}"'];
-  
+
   const getCommands = function (): Array<ICommand> {
     return [
       commands.getGitStatus(firstCmds),
@@ -223,73 +225,73 @@ searchDir(searchRoot, function (err: Error) {
       commands.getCommitDifferenceGithub(firstCmds)
     ];
   };
-  
+
   async.eachLimit(repos, 3, function (r: string, cb: Function) {
-      
+
       const v = results[r] = [] as any;
       const commands = getCommands();
       async.eachLimit(commands, 1, makeRun(v, r), cb);
     },
-    
+
     function (e: Error) {
-      
+
       if (e) {
         throw e.stack || new Error(util.inspect(e));
       }
-      
+
       let problemCount = 0;
-      
+
       Object.keys(results).forEach(function (k) {
-        
+
         const hasProblem = results[k].some(function (v: any) {
           return v.negativeResultValue || !v.positiveResultValue;
         });
-        
+
         if (hasProblem) {
-          
+
           problemCount++;
-          
+
           console.log(' ---------------------------------------------------------------------------------------------');
           console.log();
-          
+
           log.info(chalk.magenta.italic.bold('Results for repo with path: '), chalk.black.bold(k));
-          
+
           results[k].forEach(function (v: any) {
-            
+
             console.log();
             log.info('Command name:', chalk.magenta(v.commandName));
-            
+
             if (v.positiveResultValue) {
               log.info(chalk.cyan('Positive result:'),
                 v.positiveResultValue);
             }
             else {
               log.info(chalk.yellow('Negative result value:'), v.negativeResultValue || 'unknown negative result [b].');
-              
+
               if (String(v.stderr).trim()) {
                 log.warning('stderr:', v.stderr);
               }
-              
+
             }
-            
+
           });
-          
+
         }
-        
+
       });
-      
+
       console.log();
-      
+
       if (problemCount < 1) {
         log.good('None of your git repos had an unclean state. Congratulations. Move on with your day.')
       }
       else {
         log.warning(`You have problems to address in ${problemCount} repo(s).`)
       }
-      
+
       process.exit(0);
-      
+
     });
-  
+
 });
 
