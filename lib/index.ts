@@ -5,22 +5,19 @@
 import * as util from 'util';
 import * as assert from 'assert';
 import * as path from 'path';
-import * as EE from 'events';
 import * as fs from 'fs';
-import * as stream from 'stream';
-import * as cp from 'child_process';
 
 //npm
 import chalk from 'chalk';
 const dashdash = require('dashdash');
 const async = require('async');
 const cwd = process.cwd();
-import * as commands from './lib/commands';
+import * as commands from './commands';
 
 //project
-import {log} from './lib/logging';
-import {options} from './lib/options';
-import {makeRun} from './lib/run';
+import {log} from './logging';
+import {options} from './options';
+import {makeRun} from './run';
 
 //////////////////////////////////////////////////////////////////////////
 

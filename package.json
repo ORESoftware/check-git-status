@@ -2,20 +2,20 @@
   "name": "check-git-status",
   "version": "0.0.103",
   "description": "Checks the Git status of all Git repos on your filesystem within a directory.",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "test": "suman"
   },
   "bin": {
-    "check_git_status": "index.js",
-    "ckgs": "index.js"
+    "check_git_status": "dist/index.js",
+    "ckgs": "dist/index.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ORESoftware/check-git-status.git"
   },
-  "typings": "index.d.ts",
-  "types": "index.d.ts",
+  "typings": "dist/index.d.ts",
+  "types": "dist/index.d.ts",
   "keywords": [
     "git",
     "status",

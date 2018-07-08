@@ -1,7 +1,7 @@
 'use strict';
 
 import * as cp from 'child_process';
-import {ICommand} from "../index";
+import {ICommand} from "./index";
 
 ///////////////////////////////////////////////////////////////////
 
