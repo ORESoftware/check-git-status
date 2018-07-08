@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 export interface INPMLinkUpOpts {
     search_root: Array<string>;
     clear_all_caches: boolean;
