@@ -12,7 +12,7 @@ import chalk from 'chalk';
 const dashdash = require('dashdash');
 const async = require('async');
 const cwd = process.cwd();
-import * as commands from './commands';
+import {commands} from './commands';
 
 //project
 import {log} from './logging';
@@ -36,18 +36,6 @@ const ignorables = <Ignorables> {
 };
 
 //////////////////////////////////////////////////////////////
-
-export interface INPMLinkUpOpts {
-  search_root: Array<string>,
-  clear_all_caches: boolean,
-  verbosity: number,
-  version: string,
-  help: boolean,
-  completion: boolean,
-  install_all: boolean,
-  self_link_all: boolean,
-  treeify: boolean
-}
 
 export interface ICommand {
   exitCode?: number,
@@ -74,7 +62,7 @@ export interface IResult {
 
 ////////////////////////////////////////////////////////////////////
 
-let opts: INPMLinkUpOpts, parser = dashdash.createParser({options});
+let opts: any, parser = dashdash.createParser({options});
 
 try {
   opts = parser.parse(process.argv);
