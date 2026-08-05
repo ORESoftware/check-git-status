@@ -14,6 +14,14 @@ const getDefaultValues = function () {
   }
 };
 
+const output = (stdout: string, stderr: string): string => {
+  return [stdout, stderr].map(value => String(value || '').trim()).filter(Boolean).join('\n');
+};
+
+const isDefaultBranch = (value: string): boolean => {
+  return ['main', 'master'].indexOf(String(value || '').trim()) >= 0;
+};
+
 //////////////////////////////////////////////////////////////////////////////////
 
 export interface Commando {
@@ -22,54 +30,27 @@ export interface Commando {
 
 export const commands: Commando = {
 
-
   getGitStatus(firstCmds: Array<string>): ICommand {
 
     return <ICommand> Object.assign(getDefaultValues(), {
       commandName: '"Git status"',
       command: firstCmds.concat([
-        'git status'
+        'git status --porcelain=v1 --untracked-files=normal'
       ]),
       isNegativeResultValue: function (stdout: string, stderr: string): boolean {
-
-        if (String(stdout).match(/Changes not staged for commit/i)) {
-          return true;
-        }
-
-        if (String(stdout).match(/Changes to be committed/i)) {
-          return true;
-        }
-
-        if (String(stdout).match(/Untracked files/i)) {
-          return true;
-        }
-
-        if (String(stdout).match(/unmerged paths/i)) {
-          return true;
-        }
+        return Boolean(output(stdout, stderr));
       },
-
       isPositiveResultValue: function (stdout: string, stderr: string): boolean {
-        if (String(stdout).trim().match(/nothing to commit/i)) {
-          return true;
-        }
-
-        if (String(stdout).trim().match(/working directory clean/i)) {
-          return true;
-        }
+        return !output(stdout, stderr);
       },
-
-      processPositiveResultValue: function (stdout: string, stderr: string): string {
-        return String(stdout).trim();
+      processPositiveResultValue: function (): string {
+        return 'clean working tree';
       },
-
       processNegativeResultValue: function (stdout: string, stderr: string): string {
-        return String(stdout).trim() || 'unknown negative result [a]';
+        return output(stdout, stderr) || 'git status did not produce a clean result';
       }
     });
   },
-
-
 
   getCommitDifference(firstCmds: Array<string>): ICommand {
 
@@ -78,54 +59,57 @@ export const commands: Commando = {
       commandName: '"Git commit difference [npm <--> local]"',
       command: firstCmds.concat(
         [
-          `git log --oneline $(npm view . gitHead)..$(git rev-parse HEAD) | wc -l | sed 's/^ *//;s/ *$//'`
+          `published_head="$(npm view . gitHead --json 2>/dev/null | tr -d '\"' || true)"; ` +
+          `if [ -z "$published_head" ] || ! git cat-file -e "$published_head^{commit}" 2>/dev/null; ` +
+          `then echo 0; else git rev-list --count "$published_head"..HEAD; fi`
         ]
       ),
-      isNegativeResultValue: function (stdout: string, stderr: string): boolean {
-        return parseInt(String(stdout).trim()) > 0;
+      isNegativeResultValue: function (stdout: string): boolean {
+        return parseInt(String(stdout).trim(), 10) > 0;
       },
-      isPositiveResultValue: function (stdout: string, stderr: string): boolean {
-        return parseInt(String(stdout).trim()) < 1;
+      isPositiveResultValue: function (stdout: string): boolean {
+        return parseInt(String(stdout).trim(), 10) < 1;
       },
-      processPositiveResultValue: function (stdout: string, stderr: string): string {
+      processPositiveResultValue: function (stdout: string): string {
         return String(stdout).trim();
       },
       processNegativeResultValue: function (stdout: string, stderr: string): string {
-        return String(stdout).trim();
+        return output(stdout, stderr);
       }
 
     });
   },
-
 
   getCommitDifferenceGithub(firstCmds: Array<string>): ICommand {
 
     return <ICommand> Object.assign(getDefaultValues(), {
 
-      commandName: '"Git commit difference [origin/master <--> local]"',
+      commandName: '"Git commit difference [origin default <--> local]"',
       command: firstCmds.concat(
         [
-          `git fetch origin`,
-          `git log --oneline $(git rev-parse origin/master)..$(git rev-parse HEAD) | wc -l | sed 's/^ *//;s/ *$//'`
+          `if ! git remote get-url origin >/dev/null 2>&1; then echo 0; else ` +
+          `git fetch --quiet origin && ` +
+          `remote_ref="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD || true)"; ` +
+          `if [ -z "$remote_ref" ] && git show-ref --verify --quiet refs/remotes/origin/main; then remote_ref=origin/main; fi; ` +
+          `if [ -z "$remote_ref" ] && git show-ref --verify --quiet refs/remotes/origin/master; then remote_ref=origin/master; fi; ` +
+          `if [ -z "$remote_ref" ]; then echo 0; else git rev-list --count "$remote_ref"..HEAD; fi; fi`
         ]
       ),
-      isNegativeResultValue: function (stdout: string, stderr: string): boolean {
-        return parseInt(String(stdout).trim()) > 0;
+      isNegativeResultValue: function (stdout: string): boolean {
+        return parseInt(String(stdout).trim(), 10) > 0;
       },
-      isPositiveResultValue: function (stdout: string, stderr: string): boolean {
-        return parseInt(String(stdout).trim()) < 1;
+      isPositiveResultValue: function (stdout: string): boolean {
+        return parseInt(String(stdout).trim(), 10) < 1;
       },
-      processPositiveResultValue: function (stdout: string, stderr: string): string {
+      processPositiveResultValue: function (stdout: string): string {
         return String(stdout).trim();
       },
       processNegativeResultValue: function (stdout: string, stderr: string): string {
-        return String(stdout).trim();
+        return output(stdout, stderr);
       }
 
     });
   },
-
-
 
   getBranchName(firstCmds: Array<string>): ICommand {
 
@@ -136,25 +120,19 @@ export const commands: Commando = {
         'git rev-parse --abbrev-ref HEAD'
       ]),
       isNegativeResultValue: function (stdout: string, stderr: string): boolean {
-        return false;
+        return Boolean(String(stderr || '').trim()) || !isDefaultBranch(stdout);
       },
       isPositiveResultValue: function (stdout: string, stderr: string): boolean {
-        return String(stdout).trim() === 'master';
+        return !String(stderr || '').trim() && isDefaultBranch(stdout);
       },
-      processPositiveResultValue: function (stdout: string, stderr: string): string {
+      processPositiveResultValue: function (stdout: string): string {
         return String(stdout).trim();
       },
       processNegativeResultValue: function (stdout: string, stderr: string): string {
-        return String(stdout).trim();
+        return output(stdout, stderr);
       }
 
     });
   }
 
 };
-
-
-
-
-
-
