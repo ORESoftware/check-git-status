@@ -9,8 +9,6 @@ export const makeRun = function (v: Array<ICommand>, r: string) {
 
   return function run(c: ICommand, cb: Function) {
 
-    const result = {}; // putting resulting data on new object, instead of using JSON.parse(JSON.stringify())
-
     const k = cp.spawn('bash', [], {
       env: Object.assign({}, process.env, {
         git_root_path: r
@@ -21,6 +19,40 @@ export const makeRun = function (v: Array<ICommand>, r: string) {
 
     let stdout = '';
     let stderr = '';
+    let completed = false;
+
+    const finish = function (code: number, spawnError?: Error) {
+      if (completed) {
+        return;
+      }
+      completed = true;
+
+      c.exitCode = code;
+      c.stderr = String(stderr).trim();
+      c.stdout = String(stdout).trim();
+
+      if (spawnError || code !== 0) {
+        c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) ||
+          (spawnError && spawnError.message) ||
+          String(stderr).trim() ||
+          `command exited with code ${code}`;
+      }
+      else if (c.isNegativeResultValue(stdout, stderr)) {
+        c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) ||
+          'unknown negative result [c].';
+      }
+      else if (c.isPositiveResultValue(stdout, stderr)) {
+        c.positiveResultValue = c.processPositiveResultValue(stdout, stderr) ||
+          'unknown positive result.';
+      }
+      else {
+        c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) ||
+          'a positive result could not be acquired, but no clear negative result was found.';
+      }
+
+      v.push(JSON.parse(JSON.stringify(c)));
+      cb(null);
+    };
 
     k.stderr.on('data', function (d) {
       stderr += String(d);
@@ -30,30 +62,12 @@ export const makeRun = function (v: Array<ICommand>, r: string) {
       stdout += String(d);
     });
 
+    k.once('error', function (err) {
+      finish(1, err);
+    });
+
     k.once('exit', function (code) {
-
-      c.exitCode = code;
-      c.stderr = String(stderr).trim();
-      c.stdout = String(stdout).trim();
-
-      if (c.isNegativeResultValue(stdout, stderr)) {
-        c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) || 'unknown negative result [c].';
-      }
-
-      else {
-        if (c.isPositiveResultValue(stdout, stderr)) {
-          c.positiveResultValue = c.processPositiveResultValue(stdout, stderr) || 'unknown positive result.';
-        }
-        else {
-          c.negativeResultValue = c.processNegativeResultValue(stdout, stderr) ||
-            'a positive result could not be acquired, but no clear negative result was found.'
-        }
-      }
-
-      v.push(JSON.parse(JSON.stringify(c)));
-
-      cb(null);
-
+      finish(code === null ? 1 : code);
     });
 
   }

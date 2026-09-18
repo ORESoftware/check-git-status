@@ -4,7 +4,9 @@
   "description": "Checks the Git status of all Git repos on your filesystem within a directory.",
   "main": "dist/index.js",
   "scripts": {
-    "test": "suman"
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test test/*.test.js",
+    "test:e2e": "npm test"
   },
   "bin": {
     "check_git_status": "dist/index.js",
@@ -30,14 +32,18 @@
   },
   "homepage": "https://github.com/ORESoftware/check-git-status#readme",
   "devDependencies": {
-    "@types/core-js": "^0.9.43",
-    "@types/node": "^8.0.53",
     "@types/async": "^2.0.45",
-    "@types/chalk": "^2.2.0"
+    "@types/chalk": "^2.2.0",
+    "@types/core-js": "^0.9.43",
+    "@types/node": "^18.19.0",
+    "typescript": "4.9.5"
   },
   "dependencies": {
-    "async": "^2.6.0",
-    "chalk": "^2.3.0",
+    "async": "^2.6.4",
+    "chalk": "^2.4.1",
     "dashdash": "^1.14.1"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

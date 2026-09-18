@@ -1,24 +1,25 @@
 {
   "compilerOptions": {
     "outDir": "dist",
+    "rootDir": "lib",
     "skipLibCheck": true,
     "declaration": true,
     "baseUrl": ".",
     "allowJs": false,
-    "target": "es6",
+    "target": "es2019",
     "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "noImplicitAny": true,
     "removeComments": true,
     "allowUnreachableCode": true,
     "lib": [
-      "es2015",
-      "es2016",
-      "es2017"
+      "es2019"
     ]
   },
-  "allowJs": true,
   "compileOnSave": false,
   "include": [
-     "lib"
+    "lib"
   ]
 }
